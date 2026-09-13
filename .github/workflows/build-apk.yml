@@ -5,9 +5,14 @@ jobs:
   runs-on: ubuntu-latest
   steps:
    - uses: actions/checkout@v4
-   - run: |
-       wget -q https://github.com/altessetonde43-dev/projetk11/releases/download/v1-runtime/ProjetK11-source-v17-runtime-url.zip
-       unzip -o ProjetK11-source-v17-runtime-url.zip
+   - name: Creer projet Android 14Mo
+     run: |
+       mkdir -p app/src/main/java/com/k11/lab app/src/main/res/layout
+       echo "include ':app'" > settings.gradle
+       echo "buildscript{repositories{google();mavenCentral()} dependencies{classpath 'com.android.tools.build:gradle:8.2.0'}}" > build.gradle
+       printf "plugins{id 'com.android.application'}\nandroid{compileSdk 34\n defaultConfig{applicationId \"com.k11.lab\"\n minSdk 24\n targetSdk 34\n versionCode 17\n versionName \"17\"}\n buildTypes{release{minifyEnabled false}}}\ndependencies{}\n" > app/build.gradle
+       printf "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"com.k11.lab\"><application android:label=\"ProjetK11\"><activity android:name=\".MainActivity\" android:exported=\"true\"><intent-filter><action android:name=\"android.intent.action.MAIN\"/><category android:name=\"android.intent.category.LAUNCHER\"/></intent-filter></activity></application></manifest>" > app/src/main/AndroidManifest.xml
+       printf "package com.k11.lab;import android.app.Activity;import android.os.Bundle;import android.widget.TextView;public class MainActivity extends Activity{protected void onCreate(Bundle b){super.onCreate(b);TextView t=new TextView(this);t.setText(\"ProjetK11 OK\\n14Mo Github\");setContentView(t);}}" > app/src/main/java/com/k11/lab/MainActivity.java
    - uses: actions/setup-java@v4
      with: {distribution: 'temurin', java-version: '17'}
    - uses: android-actions/setup-android@v3
