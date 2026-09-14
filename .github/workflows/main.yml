@@ -19,22 +19,16 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Cache Android NDK/CMake
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/local/lib/android/sdk/ndk
-            /usr/local/lib/android/sdk/cmake
-          key: ndk-cmake-24.0.8215888-3.22.1
-
-      - name: Install Android SDK components (NDK + CMake)
+      - name: Install NDK + CMake
         run: |
-          yes | sdkmanager --licenses || true
           sdkmanager "ndk;24.0.8215888"
           sdkmanager "cmake;3.22.1"
+
+      - name: Setup Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
