@@ -1,0 +1,94 @@
+name: Build TESKINO GAMING APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile TESKINO GAMING
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Accept Android SDK licenses
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Find application directory
+        shell: bash
+        run: |
+          PACKAGE_JSON=$(find . -maxdepth 5 -type f -name package.json -not -path "*/node_modules/*" -not -path "*/.git/*" | head -n 1)
+          if [ -z "$PACKAGE_JSON" ]; then
+            echo "ERROR: package.json not found"
+            exit 1
+          fi
+          APP_DIR=$(dirname "$PACKAGE_JSON")
+          if [ ! -f "$APP_DIR/app.json" ] && [ ! -f "$APP_DIR/app.config.js" ] && [ ! -f "$APP_DIR/app.config.ts" ] && [ ! -f "$APP_DIR/app.config.mjs" ]; then
+            echo "ERROR: Expo app configuration not found in $APP_DIR"
+            exit 1
+          fi
+          echo "APP_DIR=$APP_DIR" >> "$GITHUB_ENV"
+          echo "Application directory: $APP_DIR"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd "$APP_DIR"
+          npm install --no-audit --no-fund
+
+      - name: Check Expo configuration
+        shell: bash
+        run: |
+          cd "$APP_DIR"
+          npx expo config --type public
+
+      - name: Generate Android project
+        shell: bash
+        run: |
+          cd "$APP_DIR"
+          npx expo prebuild --platform android --non-interactive
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build debug APK
+        shell: bash
+        run: |
+          cd "$APP_DIR/android"
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: teskino-gaming-debug-apk
+          path: \${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
